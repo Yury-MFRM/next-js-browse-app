@@ -4,23 +4,39 @@ import { SiteHeader } from "@/components/site-header"
 import { buttonVariants } from "@/components/ui/button"
 import { getProduct, products } from "@/lib/products"
 
+// Parse cart string "name:qty,name:qty,..." into entries with quantities
+function parseCartItems(cartString: string): Array<{ name: string; qty: number }> {
+  if (!cartString.trim()) return []
+
+  const entries = cartString
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0)
+
+  return entries.map((entry) => {
+    const [name, qtyStr] = entry.split(":")
+    const qty = qtyStr ? parseInt(qtyStr, 10) : 1
+    return { name, qty }
+  })
+}
+
 export default async function CartPage() {
   const cookieStore = await cookies()
   const cartItemsString = cookieStore.get("cart_items")?.value || ""
   
-  const cartItemNames = cartItemsString
-    .split(",")
-    .map((item) => item.trim())
-    .filter((item) => item.length > 0)
+  const cartEntries = parseCartItems(cartItemsString)
   
-  // Find product details for items in cart
-  const cartProducts = cartItemNames
-    .map((name) => products.find((p) => p.name === name))
-    .filter((p) => p !== undefined)
+  // Find product details for items in cart with quantities
+  const cartProducts = cartEntries
+    .map((entry) => ({
+      ...entry,
+      product: products.find((p) => p.name === entry.name),
+    }))
+    .filter((item) => item.product !== undefined)
 
-  const total = cartProducts.reduce((sum, product) => {
-    const price = parseFloat(product.price.replace("$", ""))
-    return sum + price
+  const total = cartProducts.reduce((sum, item) => {
+    const price = parseFloat(item.product!.price.replace("$", ""))
+    return sum + price * item.qty
   }, 0)
 
   return (
@@ -43,17 +59,20 @@ export default async function CartPage() {
         ) : (
           <>
             <div className="mt-8 space-y-4">
-              {cartProducts.map((product) => (
+              {cartProducts.map((item) => (
                 <div
-                  key={product.name}
+                  key={item.name}
                   className="flex items-center justify-between border-b border-border py-4"
                 >
                   <div className="flex flex-col gap-1">
-                    <span className="font-medium">{product.name}</span>
+                    <span className="font-medium">{item.name}</span>
                     <span className="text-sm text-muted-foreground">
-                      {product.price}
+                      {item.product!.price} × {item.qty}
                     </span>
                   </div>
+                  <span className="text-sm font-medium">
+                    ${(parseFloat(item.product!.price.replace("$", "")) * item.qty).toFixed(2)}
+                  </span>
                 </div>
               ))}
             </div>

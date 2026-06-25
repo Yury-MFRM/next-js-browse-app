@@ -9,12 +9,13 @@ export function CartBadge() {
   useEffect(() => {
     setMounted(true)
 
-    // Fetch initial cart count
+    // Fetch initial cart count (total quantity across all items)
     const fetchCartCount = async () => {
       try {
         const response = await fetch('/api/cart', { method: 'GET' })
         if (response.ok) {
           const data = await response.json()
+          // count already includes sum of all quantities from API
           setCartCount(data.count)
         }
       } catch (error) {
