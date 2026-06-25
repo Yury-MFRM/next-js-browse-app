@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { ShoppingCart } from "lucide-react"
+import { CartBadge } from "@/components/cart-badge"
 
 export function SiteHeader() {
   return (
@@ -14,6 +15,7 @@ export function SiteHeader() {
           className="relative inline-flex h-10 w-10 items-center justify-center rounded-md text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
         >
           <ShoppingCart className="h-5 w-5" aria-hidden="true" />
+          <CartBadge />
         </Link>
       </div>
     </header>
