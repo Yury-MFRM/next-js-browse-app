@@ -4,6 +4,7 @@ import { notFound } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { buttonVariants } from "@/components/ui/button"
+import { AddToCartButton } from "@/components/add-to-cart-button"
 import { getProduct, products } from "@/lib/products"
 
 export function generateStaticParams() {
@@ -54,15 +55,7 @@ export default async function ProductPage({
             <p className="text-pretty leading-relaxed text-muted-foreground">
               {product.description}
             </p>
-            <Link
-              href="/cart"
-              className={buttonVariants({
-                size: "lg",
-                className: "mt-2 w-full sm:w-auto",
-              })}
-            >
-              Add to cart
-            </Link>
+            <AddToCartButton productName={product.name} />
           </div>
         </div>
       </section>
