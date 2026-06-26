@@ -55,7 +55,7 @@ export default async function ProductPage({
             <p className="text-pretty leading-relaxed text-muted-foreground">
               {product.description}
             </p>
-            <AddToCartButton productName={product.name} />
+            <AddToCartButton productSlug={product.slug} />
           </div>
         </div>
       </section>

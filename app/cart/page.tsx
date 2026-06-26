@@ -2,10 +2,10 @@ import Link from "next/link"
 import { cookies } from "next/headers"
 import { SiteHeader } from "@/components/site-header"
 import { buttonVariants } from "@/components/ui/button"
-import { getProduct, products } from "@/lib/products"
+import { getProduct } from "@/lib/products"
 
-// Parse cart string "name:qty,name:qty,..." into entries with quantities
-function parseCartItems(cartString: string): Array<{ name: string; qty: number }> {
+// Parse cart string "slug:qty,slug:qty,..." into entries with quantities
+function parseCartItems(cartString: string): Array<{ slug: string; qty: number }> {
   if (!cartString.trim()) return []
 
   const entries = cartString
@@ -14,9 +14,9 @@ function parseCartItems(cartString: string): Array<{ name: string; qty: number }
     .filter((item) => item.length > 0)
 
   return entries.map((entry) => {
-    const [name, qtyStr] = entry.split(":")
+    const [slug, qtyStr] = entry.split(":")
     const qty = qtyStr ? parseInt(qtyStr, 10) : 1
-    return { name, qty }
+    return { slug, qty }
   })
 }
 
@@ -30,7 +30,7 @@ export default async function CartPage() {
   const cartProducts = cartEntries
     .map((entry) => ({
       ...entry,
-      product: products.find((p) => p.name === entry.name),
+      product: getProduct(entry.slug),
     }))
     .filter((item) => item.product !== undefined)
 
@@ -61,11 +61,11 @@ export default async function CartPage() {
             <div className="mt-8 space-y-4">
               {cartProducts.map((item) => (
                 <div
-                  key={item.name}
+                  key={item.slug}
                   className="flex items-center justify-between border-b border-border py-4"
                 >
                   <div className="flex flex-col gap-1">
-                    <span className="font-medium">{item.name}</span>
+                    <span className="font-medium">{item.product!.name}</span>
                     <span className="text-sm text-muted-foreground">
                       {item.product!.price} × {item.qty}
                     </span>
