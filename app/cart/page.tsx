@@ -1,41 +1,13 @@
 import Link from "next/link"
-import { cookies } from "next/headers"
 import { SiteHeader } from "@/components/site-header"
 import { buttonVariants } from "@/components/ui/button"
-import { getProduct } from "@/lib/products"
-
-// Parse cart string "slug:qty,slug:qty,..." into entries with quantities
-function parseCartItems(cartString: string): Array<{ slug: string; qty: number }> {
-  if (!cartString.trim()) return []
-
-  const entries = cartString
-    .split(",")
-    .map((item) => item.trim())
-    .filter((item) => item.length > 0)
-
-  return entries.map((entry) => {
-    const [slug, qtyStr] = entry.split(":")
-    const qty = qtyStr ? parseInt(qtyStr, 10) : 1
-    return { slug, qty }
-  })
-}
+import { getCartItems } from "@/lib/cart"
 
 export default async function CartPage() {
-  const cookieStore = await cookies()
-  const cartItemsString = cookieStore.get("cart_items")?.value || ""
-  
-  const cartEntries = parseCartItems(cartItemsString)
-  
-  // Find product details for items in cart with quantities
-  const cartProducts = cartEntries
-    .map((entry) => ({
-      ...entry,
-      product: getProduct(entry.slug),
-    }))
-    .filter((item) => item.product !== undefined)
+  const cartProducts = await getCartItems()
 
   const total = cartProducts.reduce((sum, item) => {
-    const price = parseFloat(item.product!.price.replace("$", ""))
+    const price = parseFloat(item.product.price.replace("$", ""))
     return sum + price * item.qty
   }, 0)
 
@@ -46,7 +18,7 @@ export default async function CartPage() {
         <h1 className="text-balance text-3xl font-semibold tracking-tight">
           Your cart
         </h1>
-        
+
         {cartProducts.length === 0 ? (
           <>
             <p className="mt-2 text-muted-foreground leading-relaxed">
@@ -65,18 +37,18 @@ export default async function CartPage() {
                   className="flex items-center justify-between border-b border-border py-4"
                 >
                   <div className="flex flex-col gap-1">
-                    <span className="font-medium">{item.product!.name}</span>
+                    <span className="font-medium">{item.product.name}</span>
                     <span className="text-sm text-muted-foreground">
-                      {item.product!.price} × {item.qty}
+                      {item.product.price} × {item.qty}
                     </span>
                   </div>
                   <span className="text-sm font-medium">
-                    ${(parseFloat(item.product!.price.replace("$", "")) * item.qty).toFixed(2)}
+                    ${(parseFloat(item.product.price.replace("$", "")) * item.qty).toFixed(2)}
                   </span>
                 </div>
               ))}
             </div>
-            
+
             <div className="mt-8 border-t border-border pt-4">
               <div className="flex items-center justify-between">
                 <span className="text-lg font-semibold">Total:</span>
@@ -85,7 +57,7 @@ export default async function CartPage() {
                 </span>
               </div>
             </div>
-            
+
             <div className="mt-6 flex gap-4">
               <Link href="/" className={buttonVariants({ variant: "outline" })}>
                 Continue shopping
