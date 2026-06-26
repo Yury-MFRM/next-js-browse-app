@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 
-// Parse cart string "name:qty,name:qty,..." into a map
+// Parse cart string "slug:qty,slug:qty,..." into a map
 function parseCartItems(cartString: string): Map<string, number> {
   const items = new Map<string, number>()
   if (!cartString.trim()) return items
@@ -12,9 +12,9 @@ function parseCartItems(cartString: string): Map<string, number> {
     .filter((item) => item.length > 0)
 
   entries.forEach((entry) => {
-    const [name, qtyStr] = entry.split(':')
+    const [slug, qtyStr] = entry.split(':')
     const qty = qtyStr ? parseInt(qtyStr, 10) : 1
-    items.set(name, qty)
+    items.set(slug, qty)
   })
 
   return items
@@ -23,8 +23,8 @@ function parseCartItems(cartString: string): Map<string, number> {
 // Convert map to cart string, omitting :1 for single quantities
 function serializeCartItems(items: Map<string, number>): string {
   const entries: string[] = []
-  items.forEach((qty, name) => {
-    entries.push(qty === 1 ? name : `${name}:${qty}`)
+  items.forEach((qty, slug) => {
+    entries.push(qty === 1 ? slug : `${slug}:${qty}`)
   })
   return entries.join(',')
 }
@@ -40,11 +40,11 @@ function calculateTotalCount(items: Map<string, number>): number {
 
 export async function POST(request: NextRequest) {
   try {
-    const { productName } = await request.json()
+    const { productSlug } = await request.json()
 
-    if (!productName || typeof productName !== 'string') {
+    if (!productSlug || typeof productSlug !== 'string') {
       return NextResponse.json(
-        { error: 'Invalid product name' },
+        { error: 'Invalid product slug' },
         { status: 400 }
       )
     }
@@ -56,8 +56,8 @@ export async function POST(request: NextRequest) {
     const items = parseCartItems(cartItemsString)
 
     // Increment quantity if product exists, otherwise add with qty 1
-    const currentQty = items.get(productName) || 0
-    items.set(productName, currentQty + 1)
+    const currentQty = items.get(productSlug) || 0
+    items.set(productSlug, currentQty + 1)
 
     // Update cookie with new items
     const newCartValue = serializeCartItems(items)
@@ -72,8 +72,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       count: totalCount,
-      items: Array.from(items.entries()).map(([name, qty]) => ({
-        name,
+      items: Array.from(items.entries()).map(([slug, qty]) => ({
+        slug,
         qty,
       })),
     })
@@ -95,8 +95,8 @@ export async function GET() {
     const totalCount = calculateTotalCount(items)
 
     return NextResponse.json({
-      items: Array.from(items.entries()).map(([name, qty]) => ({
-        name,
+      items: Array.from(items.entries()).map(([slug, qty]) => ({
+        slug,
         qty,
       })),
       count: totalCount,

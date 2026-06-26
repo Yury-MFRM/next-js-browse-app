@@ -6,12 +6,12 @@ import { Loader2 } from 'lucide-react'
 import { buttonVariants } from '@/components/ui/button'
 
 interface AddToCartButtonProps {
-  productName: string
+  productSlug: string
   className?: string
 }
 
 export function AddToCartButton({
-  productName,
+  productSlug,
   className,
 }: AddToCartButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
@@ -26,7 +26,7 @@ export function AddToCartButton({
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ productName }),
+        body: JSON.stringify({ productSlug }),
       })
 
       if (!response.ok) {
