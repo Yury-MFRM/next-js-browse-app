@@ -1,7 +1,6 @@
 import { Redis } from '@upstash/redis'
 import { cookies } from 'next/headers'
-
-export const CART_ID_COOKIE = 'cart_id'
+import { CART_ID_COOKIE } from '@/lib/cart-id'
 
 const CART_KEY_PREFIX = 'cart:'
 const CART_TTL_SECONDS = 60 * 60 * 24 * 7
@@ -11,7 +10,7 @@ export type CartRecord = {
   progress: number
 }
 
-const emptyCart = (): CartRecord => ({ items: {}, progress: 0 })
+export const emptyCart = (): CartRecord => ({ items: {}, progress: 0 })
 
 /** In-memory fallback when Redis env vars are not configured (local dev). */
 const memoryStore = new Map<string, CartRecord>()
@@ -34,26 +33,6 @@ export async function getCartId(): Promise<string | null> {
   return cookieStore.get(CART_ID_COOKIE)?.value ?? null
 }
 
-/** Returns the visitor's cart id, creating the cookie when missing. */
-export async function ensureCartId(): Promise<string> {
-  const existing = await getCartId()
-  if (existing) return existing
-
-  const cartId = crypto.randomUUID()
-  await setCartIdCookie(cartId)
-  return cartId
-}
-
-export async function setCartIdCookie(cartId: string): Promise<void> {
-  const cookieStore = await cookies()
-  cookieStore.set(CART_ID_COOKIE, cartId, {
-    path: '/',
-    httpOnly: true,
-    sameSite: 'lax',
-    maxAge: CART_TTL_SECONDS,
-  })
-}
-
 export async function loadCart(cartId: string): Promise<CartRecord | null> {
   const redis = getRedis()
   if (redis) {
@@ -72,26 +51,4 @@ export async function saveCart(
     return
   }
   memoryStore.set(cartId, cart)
-}
-
-export async function loadCartForVisitor(): Promise<{
-  cartId: string | null
-  cart: CartRecord
-}> {
-  const cartId = await getCartId()
-  if (!cartId) {
-    return { cartId: null, cart: emptyCart() }
-  }
-
-  const cart = (await loadCart(cartId)) ?? emptyCart()
-  return { cartId, cart }
-}
-
-export async function loadOrCreateCartForVisitor(): Promise<{
-  cartId: string
-  cart: CartRecord
-}> {
-  const cartId = await ensureCartId()
-  const cart = (await loadCart(cartId)) ?? emptyCart()
-  return { cartId, cart }
 }

@@ -2,16 +2,31 @@ import {
   getCartCount,
   getCartItems,
   isProductSlug,
+  isValidCartId,
 } from '@/lib/cart'
-import { loadOrCreateCartForVisitor, saveCart } from '@/lib/cart-store'
+import { emptyCart, loadCart, saveCart } from '@/lib/cart-store'
 import { NextRequest, NextResponse } from 'next/server'
 
-/** Returns the current cart count for the header badge. */
-export async function GET() {
+function invalidCartIdResponse() {
+  return NextResponse.json({ error: 'Invalid cartId' }, { status: 400 })
+}
+
+/** Returns the current cart for the given cartId. */
+export async function GET(request: NextRequest) {
   try {
-    const items = await getCartItems()
+    const cartId = request.nextUrl.searchParams.get('cartId')
+
+    if (!cartId || !isValidCartId(cartId)) {
+      return NextResponse.json(
+        { error: 'Invalid or missing cartId' },
+        { status: 400 },
+      )
+    }
+
+    const items = await getCartItems(cartId)
 
     return NextResponse.json({
+      cartId,
       count: getCartCount(items),
       items: items.map((item) => ({
         slug: item.slug,
@@ -24,10 +39,10 @@ export async function GET() {
   }
 }
 
-/** Adds one unit of a product to the cart. */
+/** Adds one unit of a product to the cart identified by cartId. */
 export async function POST(request: NextRequest) {
   try {
-    const { productSlug } = await request.json()
+    const { cartId: requestedCartId, productSlug } = await request.json()
 
     if (
       !productSlug ||
@@ -37,7 +52,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid product slug' }, { status: 400 })
     }
 
-    const { cartId, cart } = await loadOrCreateCartForVisitor()
+    let cartId: string
+
+    if (requestedCartId === undefined || requestedCartId === null) {
+      cartId = crypto.randomUUID()
+    } else if (typeof requestedCartId !== 'string' || !isValidCartId(requestedCartId)) {
+      return invalidCartIdResponse()
+    } else {
+      cartId = requestedCartId
+    }
+
+    const cart = (await loadCart(cartId)) ?? emptyCart()
     cart.items[productSlug] = (cart.items[productSlug] ?? 0) + 1
     await saveCart(cartId, cart)
 
@@ -51,6 +76,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      cartId,
       count,
       items,
     })

@@ -1,10 +1,10 @@
 import Link from "next/link"
 import { SiteHeader } from "@/components/site-header"
 import { buttonVariants } from "@/components/ui/button"
-import { getCartItems } from "@/lib/cart"
+import { getCartItemsForVisitor } from "@/lib/cart"
 
 export default async function CartPage() {
-  const cartProducts = await getCartItems()
+  const cartProducts = await getCartItemsForVisitor()
 
   const total = cartProducts.reduce((sum, item) => {
     const price = parseFloat(item.product.price.replace("$", ""))

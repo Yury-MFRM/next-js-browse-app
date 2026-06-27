@@ -1,39 +1,36 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { getClientCartId } from '@/lib/cart-id'
 
 export function CartBadge() {
   const [cartCount, setCartCount] = useState(0)
   const [mounted, setMounted] = useState(false)
 
-  useEffect(() => {
-    setMounted(true)
+  const fetchCartCount = useCallback(async () => {
+    const cartId = getClientCartId()
+    if (!cartId) {
+      setCartCount(0)
+      return
+    }
 
-    // Fetch initial cart count (total quantity across all items)
-    const fetchCartCount = async () => {
-      try {
-        const response = await fetch('/api/cart', { method: 'GET' })
-        if (response.ok) {
-          const data = await response.json()
-          // count already includes sum of all quantities from API
-          setCartCount(data.count)
-        }
-      } catch (error) {
-        console.error('Error fetching cart count:', error)
+    try {
+      const response = await fetch(
+        `/api/cart?cartId=${encodeURIComponent(cartId)}`,
+      )
+      if (response.ok) {
+        const data = await response.json()
+        setCartCount(data.count)
       }
+    } catch (error) {
+      console.error('Error fetching cart count:', error)
     }
-
-    fetchCartCount()
-
-    // Listen for storage changes (when cart is updated in another tab/window)
-    const handleStorageChange = () => {
-      fetchCartCount()
-    }
-
-    window.addEventListener('storage', handleStorageChange)
-    return () => window.removeEventListener('storage', handleStorageChange)
   }, [])
 
+  useEffect(() => {
+    setMounted(true)
+    void fetchCartCount()
+  }, [fetchCartCount])
   // Only render on client after hydration to prevent flashing
   if (!mounted) {
     return null
